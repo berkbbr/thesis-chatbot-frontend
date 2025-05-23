@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { API_URL, WS_URL } from '../utils/config';
 
 type Message = {
   role: "user" | "assistant";
@@ -55,7 +56,7 @@ export default function Home() {
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/conversations/${getUserId()}`);
+      const res = await fetch(`${API_URL}/conversations/${getUserId()}`);
       if (!res.ok) return;
       
       const data = await res.json();
@@ -68,7 +69,7 @@ export default function Home() {
 
   const fetchHistory = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/history/${id}`);
+      const res = await fetch(`${API_URL}/history/${id}`);
       if (!res.ok) return;
       
       const data = await res.json();
@@ -122,7 +123,7 @@ export default function Home() {
     }, 2000);
     
     try {
-      const res = await fetch("http://localhost:8000/chat", {
+      const res = await fetch("${API_URL}/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -184,7 +185,7 @@ export default function Home() {
         return newTitles;
       });
       
-      await fetch(`http://localhost:8000/conversations/${id}`, {
+      await fetch(`${API_URL}/conversations/${id}`, {
         method: "DELETE"
       });
       
