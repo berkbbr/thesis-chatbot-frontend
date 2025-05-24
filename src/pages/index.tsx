@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { API_URL, WS_URL } from '../utils/config';
+import { API_URL } from '../utils/config';
 
 type Message = {
   role: "user" | "assistant";
@@ -20,13 +20,11 @@ export default function Home() {
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [showSettings, setShowSettings] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,7 +45,6 @@ export default function Home() {
     setConversationId(id);
     router.replace(`/?id=${id}`, undefined, { shallow: true });
     
-    // Kullanıcı tercihlerini yükle
     const savedTheme = localStorage.getItem("theme") as "dark" | "light";
     const savedName = localStorage.getItem("userName");
     if (savedTheme) setTheme(savedTheme);
@@ -63,7 +60,7 @@ export default function Home() {
       setConversationList(data.conversations || []);
       setTitles(data.titles || {});
     } catch (error) {
-      console.error("Konuşmalar getirilirken hata:", error);
+      console.error("Error fetching conversations:", error);
     }
   };
 
@@ -92,7 +89,7 @@ export default function Home() {
         setMessages([]);
       }
     } catch (error) {
-      console.error("Konuşma geçmişi getirilirken hata:", error);
+      console.error("Error fetching history:", error);
       setMessages([]);
     }
   };
@@ -115,15 +112,9 @@ export default function Home() {
     setMessages(prev => [...prev, newMessage]);
     setInput("");
     setLoading(true);
-    setIsTyping(true);
-    
-    // Typing simülasyonu
-    setTimeout(() => {
-      setIsTyping(false);
-    }, 2000);
     
     try {
-      const res = await fetch("${API_URL}/chat", {
+      const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,7 +154,6 @@ export default function Home() {
       }]);
     } finally {
       setLoading(false);
-      setIsTyping(false);
     }
   };
 
@@ -195,7 +185,7 @@ export default function Home() {
       
       fetchConversations();
     } catch (error) {
-      console.error("Silme hatası:", error);
+      console.error("Delete error:", error);
     } finally {
       setDeleteInProgress(null);
     }
@@ -312,7 +302,7 @@ export default function Home() {
         )}
 
         <div className="flex gap-4">
-          {/* Sol panel - Konuşma Listesi */}
+          {/* Left panel - Conversations */}
           <div className={`w-1/4 ${theme === "dark" ? "bg-gray-800" : "bg-gray-100"} rounded-lg p-4 shadow-lg`}>
             <h2 className="text-lg font-semibold mb-4 flex items-center justify-between">
               <span>Conversations</span>
@@ -376,7 +366,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Sağ panel - Sohbet Alanı */}
+          {/* Right panel - Chat Area */}
           <div className="flex-1 flex flex-col h-[700px]">
             <div className={`flex-1 overflow-y-auto ${theme === "dark" ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-lg mb-4 custom-scrollbar`}>
               {messages.length === 0 && (
@@ -401,67 +391,40 @@ export default function Home() {
                     key={i}
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
                   >
-                    <div className="flex items-start max-w-[80%] gap-3">
-                      {msg.role === "assistant" && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
-                      <div
-                        className={`p-4 rounded-2xl shadow-md whitespace-pre-line ${
-                          msg.role === "user"
-                            ? "bg-gradient-to-r from-green-600 to-green-700 text-white rounded-br-none"
-                            : theme === "dark" 
-                              ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white rounded-bl-none" 
-                              : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900 rounded-bl-none"
-                        }`}
-                      >
-                        <div className="text-xs opacity-70 mb-1">
-                          {msg.role === "user" ? (userName || "You") : "AI Assistant"}
-                          {msg.timestamp && (
-                            <span className="ml-2">
-                              {new Date(msg.timestamp).toLocaleTimeString('en-US', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </span>
-                          )}
-                        </div>
-                        {msg.content}
+                    <div
+                      className={`max-w-[80%] p-4 rounded-2xl shadow-md whitespace-pre-line ${
+                        msg.role === "user"
+                          ? "bg-gradient-to-r from-green-600 to-green-700 text-white"
+                          : theme === "dark" 
+                            ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white" 
+                            : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900"
+                      }`}
+                    >
+                      <div className="text-xs opacity-70 mb-1">
+                        {msg.role === "user" ? (userName || "You") : "AI Assistant"}
+                        {msg.timestamp && (
+                          <span className="ml-2">
+                            {new Date(msg.timestamp).toLocaleTimeString('en-US', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
+                        )}
                       </div>
-                      {msg.role === "user" && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                          {session?.user?.image ? (
-                            <img src={session.user.image} alt="User" className="w-full h-full rounded-full" />
-                          ) : (
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          )}
-                        </div>
-                      )}
+                      {msg.content}
                     </div>
                   </div>
                 ))}
                 
-                {isTyping && (
+                {loading && (
                   <div className="flex justify-start animate-fadeIn">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
+                    <div className={`${theme === "dark" ? "bg-gray-700" : "bg-gray-200"} p-4 rounded-2xl flex items-center space-x-2`}>
+                      <div className="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
                       </div>
-                      <div className={`${theme === "dark" ? "bg-gray-700" : "bg-gray-200"} p-4 rounded-2xl rounded-bl-none flex items-center space-x-2`}>
-                        <div className="typing-indicator">
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </div>
-                        <span className="text-sm opacity-70 ml-2">typing...</span>
-                      </div>
+                      <span className="text-sm opacity-70 ml-2">typing...</span>
                     </div>
                   </div>
                 )}
@@ -469,11 +432,10 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Input alanı */}
+            {/* Input area */}
             <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} p-4 rounded-lg shadow-lg`}>
               <div className="flex gap-3">
                 <input
-                  ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
