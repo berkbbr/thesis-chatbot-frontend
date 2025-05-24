@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { API_URL } from "../utils/config";
 
 // Geçici olarak Next-Auth devre dışı
-const mockSession: any = null;
+const mockSession: unknown = null;
 const useSession = () => ({ data: mockSession });
 const signIn = async () => { console.log("Sign in temporarily disabled"); };
 const signOut = async () => { console.log("Sign out temporarily disabled"); };
@@ -84,7 +84,7 @@ export default function Home() {
       const data = await res.json();
       if (data.history && data.history.length > 0) {
         const allMsgs: Message[] = [];
-        data.history.forEach((h: any) => {
+        data.history.forEach((h: HistoryItem) => {
           allMsgs.push({ 
             role: "user", 
             content: h.user,
