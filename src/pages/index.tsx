@@ -1,7 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
-import { signIn, signOut, useSession } from "next-auth/react";
 import { API_URL } from "../utils/config";
+
+// Geçici olarak Next-Auth devre dışı
+const mockSession: any = null;
+const useSession = () => ({ data: mockSession });
+const signIn = async () => { console.log("Sign in temporarily disabled"); };
+const signOut = async () => { console.log("Sign out temporarily disabled"); };
 
 type Message = {
   role: "user" | "assistant";
@@ -41,14 +46,21 @@ export default function Home() {
 
   useEffect(() => {
     if (!router.isReady) return;
-    const id = (router.query.id as string) || `conv_${Date.now()}`;
+    
+    // TypeScript hatası düzeltildi
+    const queryId = router.query.id;
+    const id = queryId ? String(queryId) : `conv_${Date.now()}`;
+    
     setConversationId(id);
     router.replace(`/?id=${id}`, undefined, { shallow: true });
     
-    const savedTheme = localStorage.getItem("theme") as "dark" | "light";
-    const savedName = localStorage.getItem("userName");
-    if (savedTheme) setTheme(savedTheme);
-    if (savedName) setUserName(savedName);
+    // LocalStorage sadece client-side'da çalışır
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem("theme") as "dark" | "light";
+      const savedName = localStorage.getItem("userName");
+      if (savedTheme) setTheme(savedTheme);
+      if (savedName) setUserName(savedName);
+    }
   }, [router.isReady]);
 
   const fetchConversations = async () => {
@@ -103,9 +115,10 @@ export default function Home() {
   const sendMessage = async () => {
     if (!input.trim() || !conversationId) return;
     
+    const userMessage = input;
     const newMessage: Message = { 
       role: "user", 
-      content: input,
+      content: userMessage,
       timestamp: new Date()
     };
     
@@ -118,7 +131,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,
+          message: userMessage,
           conversation_id: conversationId,
           user_email: getUserId(),
           user_name: userName || undefined
@@ -193,12 +206,14 @@ export default function Home() {
 
   const handleSignIn = () => {
     setIsSigningIn(true);
-    signIn("google").catch(() => setIsSigningIn(false));
+    signIn().finally(() => setIsSigningIn(false));
   };
 
   const saveSettings = () => {
-    localStorage.setItem("theme", theme);
-    localStorage.setItem("userName", userName);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("theme", theme);
+      localStorage.setItem("userName", userName);
+    }
     setShowSettings(false);
   };
 
