@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "thesis-chatbot-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,26 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "15.3.2",
-    "next-auth": "^4.24.11",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-markdown": "^10.1.0",
-    "uuid": "^11.1.0"
-	
+    "next": "14.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "next-auth": "4.24.5"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/uuid": "^10.0.0",
-    "autoprefixer": "^10.4.21",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.2",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.7",
-    "typescript": "^5"
+    "@types/node": "20.10.5",
+    "@types/react": "18.2.45",
+    "@types/react-dom": "18.2.18",
+    "typescript": "5.3.3",
+    "tailwindcss": "3.4.0",
+    "autoprefixer": "10.4.16",
+    "postcss": "8.4.32"
   }
 }
