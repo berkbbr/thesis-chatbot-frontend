@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { API_URL } from '../utils/config';
+import { API_URL } from "../utils/config";
 
 type Message = {
   role: "user" | "assistant";
@@ -205,7 +205,6 @@ export default function Home() {
   return (
     <main className={`min-h-screen ${theme === "dark" ? "bg-gradient-to-b from-gray-900 to-gray-800 text-white" : "bg-gradient-to-b from-gray-100 to-white text-gray-900"} p-4 flex flex-col items-center`}>
       <div className="w-full max-w-6xl">
-        {/* Header */}
         <header className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold flex gap-2 items-center">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
@@ -254,7 +253,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Settings Modal */}
         {showSettings && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-xl max-w-md w-full`}>
@@ -302,7 +300,6 @@ export default function Home() {
         )}
 
         <div className="flex gap-4">
-          {/* Left panel - Conversations */}
           <div className={`w-1/4 ${theme === "dark" ? "bg-gray-800" : "bg-gray-100"} rounded-lg p-4 shadow-lg`}>
             <h2 className="text-lg font-semibold mb-4 flex items-center justify-between">
               <span>Conversations</span>
@@ -347,7 +344,7 @@ export default function Home() {
                     onClick={() => deleteConversation(id)}
                     disabled={deleteInProgress === id}
                     className={`p-1 rounded transition-all duration-200 hover:scale-110 ${
-                      deleteInProgress === id ? 'opacity-50 cursor-not-allowed' : ''
+                      deleteInProgress === id ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                   >
                     {deleteInProgress === id ? (
@@ -366,7 +363,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right panel - Chat Area */}
           <div className="flex-1 flex flex-col h-[700px]">
             <div className={`flex-1 overflow-y-auto ${theme === "dark" ? "bg-gray-800" : "bg-white"} p-6 rounded-lg shadow-lg mb-4 custom-scrollbar`}>
               {messages.length === 0 && (
@@ -380,7 +376,7 @@ export default function Home() {
                     {userName ? `Hello ${userName}!` : "Start a new conversation"}
                   </h3>
                   <p className="text-sm max-w-md">
-                    I'm your AI assistant. How can I help you today?
+                    I am your AI assistant. How can I help you today?
                   </p>
                 </div>
               )}
@@ -404,9 +400,9 @@ export default function Home() {
                         {msg.role === "user" ? (userName || "You") : "AI Assistant"}
                         {msg.timestamp && (
                           <span className="ml-2">
-                            {new Date(msg.timestamp).toLocaleTimeString('en-US', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
+                            {new Date(msg.timestamp).toLocaleTimeString("en-US", { 
+                              hour: "2-digit", 
+                              minute: "2-digit" 
                             })}
                           </span>
                         )}
@@ -432,7 +428,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Input area */}
             <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} p-4 rounded-lg shadow-lg`}>
               <div className="flex gap-3">
                 <input
@@ -449,7 +444,7 @@ export default function Home() {
                       ? "bg-gray-700 text-white border-gray-600" 
                       : "bg-gray-100 text-gray-900 border-gray-300"
                   } border focus:border-blue-500 focus:outline-none transition-all focus:ring-2 focus:ring-blue-500 focus:ring-opacity-30`}
-                  placeholder={`${userName ? userName + ", " : ""}type your message...`}
+                  placeholder={userName ? `${userName}, type your message...` : "Type your message..."}
                   disabled={loading}
                 />
                 <button
