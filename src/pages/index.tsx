@@ -1,12 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
-import { API_URL } from "../utils/config";
 
-// Geçici olarak Next-Auth devre dışı
-const mockSession: unknown = null;
-const useSession = () => ({ data: mockSession });
-const signIn = async () => { console.log("Sign in temporarily disabled"); };
-const signOut = async () => { console.log("Sign out temporarily disabled"); };
+// Backend URL - Railway'den alındı
+const API_URL = "https://web-production-ceb2.up.railway.app";
 
 type Message = {
   role: "user" | "assistant";
@@ -15,7 +11,6 @@ type Message = {
 };
 
 export default function Home() {
-  const { data: session } = useSession();
   const router = useRouter();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -23,11 +18,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [conversationList, setConversationList] = useState<string[]>([]);
   const [titles, setTitles] = useState<Record<string, string>>({});
-  const [isSigningIn, setIsSigningIn] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [showSettings, setShowSettings] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [isSignedIn, setIsSignedIn] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -40,22 +35,19 @@ export default function Home() {
   }, [messages]);
 
   const getUserId = () => {
-    if (session?.user?.email) return session.user.email;
     return "guest";
   };
 
   useEffect(() => {
     if (!router.isReady) return;
     
-    // TypeScript hatası düzeltildi
     const queryId = router.query.id;
     const id = queryId ? String(queryId) : `conv_${Date.now()}`;
     
     setConversationId(id);
     router.replace(`/?id=${id}`, undefined, { shallow: true });
     
-    // LocalStorage sadece client-side'da çalışır
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme") as "dark" | "light";
       const savedName = localStorage.getItem("userName");
       if (savedTheme) setTheme(savedTheme);
@@ -84,7 +76,7 @@ export default function Home() {
       const data = await res.json();
       if (data.history && data.history.length > 0) {
         const allMsgs: Message[] = [];
-        data.history.forEach((h: HistoryItem) => {
+        data.history.forEach((h: any) => {
           allMsgs.push({ 
             role: "user", 
             content: h.user,
@@ -204,13 +196,8 @@ export default function Home() {
     }
   };
 
-  const handleSignIn = () => {
-    setIsSigningIn(true);
-    signIn().finally(() => setIsSigningIn(false));
-  };
-
   const saveSettings = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.setItem("theme", theme);
       localStorage.setItem("userName", userName);
     }
@@ -239,19 +226,15 @@ export default function Home() {
               </svg>
             </button>
             
-            {session ? (
+            {isSignedIn ? (
               <div className="flex items-center gap-2">
-                {session.user?.image && (
-                  <img 
-                    src={session.user.image} 
-                    alt="User" 
-                    className="w-8 h-8 rounded-full"
-                  />
-                )}
-                <span className="text-sm">{session.user?.name}</span>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                  {userName ? userName.charAt(0).toUpperCase() : "U"}
+                </div>
+                <span className="text-sm">{userName || "User"}</span>
                 <button 
                   className={`text-red-400 hover:text-red-300 text-sm px-2 py-1 ${theme === "dark" ? "bg-gray-700" : "bg-gray-200"} rounded`}
-                  onClick={() => signOut()}
+                  onClick={() => setIsSignedIn(false)}
                 >
                   Sign Out
                 </button>
@@ -259,10 +242,9 @@ export default function Home() {
             ) : (
               <button
                 className={`text-blue-400 ${theme === "dark" ? "bg-gray-700 hover:bg-blue-600" : "bg-gray-200 hover:bg-blue-100"} px-3 py-1 rounded-md text-sm`}
-                onClick={handleSignIn}
-                disabled={isSigningIn}
+                onClick={() => setIsSignedIn(true)}
               >
-                {isSigningIn ? "Signing In..." : "Sign In"}
+                Sign In
               </button>
             )}
           </div>
@@ -402,40 +384,63 @@ export default function Home() {
                     key={i}
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
                   >
-                    <div
-                      className={`max-w-[80%] p-4 rounded-2xl shadow-md whitespace-pre-line ${
-                        msg.role === "user"
-                          ? "bg-gradient-to-r from-green-600 to-green-700 text-white"
-                          : theme === "dark" 
-                            ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white" 
-                            : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900"
-                      }`}
-                    >
-                      <div className="text-xs opacity-70 mb-1">
-                        {msg.role === "user" ? (userName || "You") : "AI Assistant"}
-                        {msg.timestamp && (
-                          <span className="ml-2">
-                            {new Date(msg.timestamp).toLocaleTimeString("en-US", { 
-                              hour: "2-digit", 
-                              minute: "2-digit" 
-                            })}
-                          </span>
-                        )}
+                    <div className="flex items-start max-w-[80%] gap-3">
+                      {msg.role === "assistant" && (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                      <div
+                        className={`p-4 rounded-2xl shadow-md whitespace-pre-line ${
+                          msg.role === "user"
+                            ? "bg-gradient-to-r from-green-600 to-green-700 text-white rounded-br-none"
+                            : theme === "dark" 
+                              ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white rounded-bl-none" 
+                              : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900 rounded-bl-none"
+                        }`}
+                      >
+                        <div className="text-xs opacity-70 mb-1">
+                          {msg.role === "user" ? (userName || "You") : "AI Assistant"}
+                          {msg.timestamp && (
+                            <span className="ml-2">
+                              {new Date(msg.timestamp).toLocaleTimeString("en-US", { 
+                                hour: "2-digit", 
+                                minute: "2-digit" 
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        {msg.content}
                       </div>
-                      {msg.content}
+                      {msg.role === "user" && (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                          <span className="text-white font-bold text-sm">
+                            {userName ? userName.charAt(0).toUpperCase() : "U"}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
                 
                 {loading && (
                   <div className="flex justify-start animate-fadeIn">
-                    <div className={`${theme === "dark" ? "bg-gray-700" : "bg-gray-200"} p-4 rounded-2xl flex items-center space-x-2`}>
-                      <div className="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                      <span className="text-sm opacity-70 ml-2">typing...</span>
+                      <div className={`${theme === "dark" ? "bg-gray-700" : "bg-gray-200"} p-4 rounded-2xl rounded-bl-none flex items-center space-x-2`}>
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                        <span className="text-sm opacity-70 ml-2">typing...</span>
+                      </div>
                     </div>
                   </div>
                 )}
