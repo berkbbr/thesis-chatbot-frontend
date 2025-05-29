@@ -10,11 +10,12 @@ export default NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub
-      }
-      return session
+  async session({ session, token }) {
+    if (session.user) {
+      (session.user as any).id = token.sub; // <--- TYPE HACK!
     }
+    return session;
   }
+}
+
 })
