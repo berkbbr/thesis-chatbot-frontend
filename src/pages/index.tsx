@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/router"
-import { Send, Plus, MessageSquare, User, Bot, Menu, X, LogOut, Settings, Trash2 } from "lucide-react"
+import { Send, Plus, MessageSquare, User, Bot, Menu, X, LogOut, Settings, Trash2, ChevronDown } from 'lucide-react'
 
 // Backend URL - Railway'den alındı
 const API_URL = "https://web-production-ceb2.up.railway.app"
@@ -227,58 +227,58 @@ export default function Home() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
-  const formatConversationTime = (date: Date) => {
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+  const suggestionCards = [
+    {
+      title: "What are the advantages",
+      subtitle: "of using Next.js?",
+    },
+    {
+      title: "Write code to",
+      subtitle: "demonstrate dijkstra's algorithm",
+    },
+    {
+      title: "Help me write an essay",
+      subtitle: "about silicon valley",
+    },
+    {
+      title: "What is the weather",
+      subtitle: "in San Francisco?",
+    },
+  ]
 
-    if (diffInHours < 1) {
-      return "now"
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h`
-    } else {
-      return `${Math.floor(diffInHours / 24)}d`
-    }
+  const handleSuggestionClick = (suggestion: { title: string; subtitle: string }) => {
+    setInput(`${suggestion.title} ${suggestion.subtitle}`)
   }
 
   // Login Screen
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
-        {/* Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-
-        <div className="w-full max-w-md relative">
-          {/* Logo/App Name */}
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
           <div className="text-center mb-12">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
-              <Bot className="h-10 w-10 text-white" />
+            <div className="w-16 h-16 mx-auto mb-6 bg-white rounded-2xl flex items-center justify-center">
+              <Bot className="h-8 w-8 text-black" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-              Thesis Chatbot
-            </h1>
-            <p className="text-gray-400 text-lg">Your intelligent research assistant</p>
+            <h1 className="text-3xl font-semibold text-white mb-2">Thesis Chatbot</h1>
+            <p className="text-gray-400">Your intelligent research assistant</p>
           </div>
 
-          {/* Login Form */}
           <div className="space-y-4">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
+            <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl">
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
                 <input
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-blue-500 focus:outline-none transition-all"
+                  className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-gray-600 focus:outline-none transition-colors"
                   placeholder="Enter your name..."
                 />
               </div>
 
               <button
                 onClick={() => setIsSignedIn(true)}
-                className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+                className="w-full h-12 bg-white hover:bg-gray-100 text-black rounded-lg font-medium transition-colors"
               >
                 Continue
               </button>
@@ -289,9 +289,9 @@ export default function Home() {
                 setUserName("")
                 setIsSignedIn(true)
               }}
-              className="w-full h-14 bg-white/5 backdrop-blur-xl border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+              className="w-full h-12 bg-gray-900 border border-gray-800 text-white hover:bg-gray-800 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
             >
-              <User className="w-5 h-5 mr-3 inline-block" />
+              <User className="w-4 h-4" />
               Continue as Guest
             </button>
           </div>
@@ -301,68 +301,52 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden">
+    <div className="h-screen bg-black flex">
       {/* Sidebar */}
       <div
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 fixed lg:relative z-40 w-80 h-full transition-all duration-300 ease-in-out bg-gray-800/80 backdrop-blur-xl border-r border-white/10 shadow-xl lg:shadow-none`}
+        } lg:translate-x-0 fixed lg:relative z-40 w-64 h-full transition-transform duration-200 bg-black border-r border-gray-800 flex flex-col`}
       >
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="p-4 border-b border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Bot className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-white font-bold text-lg">Thesis Chatbot</h2>
-                  <p className="text-gray-400 text-xs">AI Assistant</p>
-                </div>
-              </div>
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-800">
+          <div className="flex items-center justify-between">
+            <h2 className="text-white font-semibold text-lg">Chatbot</h2>
+            <div className="flex items-center gap-2">
+              <button onClick={startNewConversation} className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                <Plus className="h-4 w-4 text-white" />
+              </button>
               <button className="lg:hidden text-gray-400 hover:text-white" onClick={() => setSidebarOpen(false)}>
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
+        </div>
 
-          {/* New Chat Button */}
-          <div className="p-4">
-            <button
-              onClick={startNewConversation}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl h-12 font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
-            >
-              <Plus className="h-5 w-5" />
-              New Chat
-            </button>
-          </div>
-
-          {/* Conversations */}
-          <div className="flex-1 overflow-y-auto px-2">
-            <div className="space-y-1 pb-4">
-              {conversationList.length === 0 && (
-                <div className="text-center text-sm py-4 text-gray-400">No conversations yet</div>
-              )}
-
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto p-2">
+          {conversationList.length === 0 ? (
+            <div className="text-center text-sm py-8 text-gray-500">
+              Your conversations will appear here once you start chatting!
+            </div>
+          ) : (
+            <div className="space-y-1">
               {conversationList.map((id) => (
                 <div
                   key={id}
-                  className={`group p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-all duration-200 border border-transparent hover:border-white/10 ${
-                    id === conversationId ? "bg-white/10 border-white/20" : ""
+                  className={`group p-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-800 ${
+                    id === conversationId ? "bg-gray-800" : ""
                   }`}
+                  onClick={() => {
+                    setConversationId(id)
+                    router.push(`/?id=${id}`, undefined, { shallow: true })
+                    setSidebarOpen(false)
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                    <div
-                      className="flex-1 min-w-0"
-                      onClick={() => {
-                        setConversationId(id)
-                        router.push(`/?id=${id}`, undefined, { shallow: true })
-                        setSidebarOpen(false)
-                      }}
-                    >
-                      <h4 className="text-white font-medium text-sm truncate">{titles[id] || "New conversation"}</h4>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <MessageSquare className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-white text-sm truncate">{titles[id] || "New conversation"}</span>
                     </div>
                     <button
                       onClick={(e) => {
@@ -370,82 +354,107 @@ export default function Home() {
                         deleteConversation(id)
                       }}
                       disabled={deleteInProgress === id}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 transition-all duration-200"
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded transition-all"
                     >
                       {deleteInProgress === id ? (
-                        <div className="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+                        <div className="animate-spin h-3 w-3 border border-gray-400 border-t-transparent rounded-full" />
                       ) : (
-                        <Trash2 className="h-4 w-4 text-red-400 hover:text-red-300" />
+                        <Trash2 className="h-3 w-3 text-gray-400 hover:text-red-400" />
                       )}
                     </button>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* User Profile */}
-          <div className="p-4 border-t border-white/10">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                {userName ? userName.charAt(0).toUpperCase() : <User className="h-5 w-5" />}
-              </div>
-              <div className="flex-1">
-                <p className="text-white font-medium text-sm">{userName || "Guest User"}</p>
-                <p className="text-gray-400 text-xs">{userName ? "Signed In" : "Guest Mode"}</p>
-              </div>
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-              >
-                <Settings className="h-4 w-4 text-gray-400" />
-              </button>
+        {/* User Profile */}
+        <div className="p-4 border-t border-gray-800">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-white text-sm">{userName || "Guest"}</span>
             </div>
-
             <button
-              className="w-full text-red-400 hover:text-red-300 text-sm px-3 py-2 bg-gray-700/50 hover:bg-red-500/20 rounded-lg transition-colors flex items-center justify-center gap-2"
-              onClick={() => setIsSignedIn(false)}
+              onClick={() => setShowSettings(true)}
+              className="ml-auto p-1 hover:bg-gray-800 rounded transition-colors"
             >
-              <LogOut className="h-4 w-4" />
-              Sign Out
+              <Settings className="h-4 w-4 text-gray-400" />
             </button>
           </div>
+
+          <button
+            className="w-full text-gray-400 hover:text-white text-sm px-3 py-2 hover:bg-gray-800 rounded-lg transition-colors flex items-center justify-center gap-2"
+            onClick={() => setIsSignedIn(false)}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
         </div>
       </div>
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30 transition-opacity duration-300"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="lg:hidden fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <div className="lg:hidden bg-gray-800/80 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
-          <button className="text-gray-400 hover:text-white" onClick={() => setSidebarOpen(true)}>
-            <Menu className="h-5 w-5" />
-          </button>
-          <h1 className="text-white font-semibold">Thesis Chatbot</h1>
-          <div className="w-8"></div>
+        {/* Header */}
+        <div className="border-b border-gray-800 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button className="lg:hidden text-gray-400 hover:text-white" onClick={() => setSidebarOpen(true)}>
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-center gap-4">
+                <button className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white text-sm hover:bg-gray-800 transition-colors">
+                  Chat model
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+
+                <button className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white text-sm hover:bg-gray-800 transition-colors">
+                  Private
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <button className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+              Deploy with Vercel
+            </button>
+          </div>
         </div>
 
         {/* Welcome Mode */}
         {!isChatMode && (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="w-full max-w-3xl mx-auto text-center space-y-8">
-              <div className="space-y-6">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent leading-tight">
-                  {userName ? `Hello ${userName}!` : "What's on the agenda today?"}
-                </h1>
-                <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-                  I'm your AI assistant for thesis research. Ask me anything or start a conversation.
-                </p>
-              </div>
+          <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-4xl mx-auto w-full">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-semibold text-white mb-4">
+                {userName ? `Hello ${userName}!` : "Hello there!"}
+              </h1>
+              <p className="text-gray-400 text-lg">How can I help you today?</p>
+            </div>
 
-              <div className="relative max-w-2xl mx-auto">
+            {/* Suggestion Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 w-full max-w-2xl">
+              {suggestionCards.map((card, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(card)}
+                  className="p-4 bg-gray-900 border border-gray-800 rounded-xl text-left hover:bg-gray-800 transition-colors group"
+                >
+                  <div className="text-white font-medium mb-1">{card.title}</div>
+                  <div className="text-gray-400 text-sm">{card.subtitle}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Input */}
+            <div className="w-full max-w-3xl">
+              <div className="relative">
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -455,19 +464,19 @@ export default function Home() {
                       sendMessage()
                     }
                   }}
-                  placeholder={userName ? `${userName}, type your message...` : "Type your message here..."}
-                  className="w-full h-16 md:h-18 px-6 pr-16 text-lg bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 shadow-lg"
+                  placeholder="Send a message..."
+                  className="w-full p-4 pr-12 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-gray-700 transition-colors"
                   disabled={loading}
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim() || loading}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-white text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
                 >
                   {loading ? (
-                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full" />
                   ) : (
-                    <Send className="h-5 w-5 md:h-6 md:w-6" />
+                    <Send className="h-4 w-4" />
                   )}
                 </button>
               </div>
@@ -479,39 +488,39 @@ export default function Home() {
         {isChatMode && (
           <>
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-6">
-              <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-4xl mx-auto p-6 space-y-6">
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`flex items-end gap-3 max-w-[85%] md:max-w-[75%] ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-                    >
-                      <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center">
+                    <div className={`flex gap-4 max-w-[80%] ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
                         {msg.role === "user" ? (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
+                          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                            <span className="text-black font-medium text-sm">
                               {userName ? userName.charAt(0).toUpperCase() : "U"}
                             </span>
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
                             <Bot className="h-4 w-4 text-white" />
                           </div>
                         )}
                       </div>
 
-                      <div
-                        className={`rounded-2xl px-4 py-3 shadow-lg backdrop-blur-sm transition-all duration-200 ${
-                          msg.role === "user"
-                            ? "bg-gradient-to-r from-green-600 to-green-700 text-white"
-                            : "bg-white/10 text-gray-100 border border-white/20"
-                        }`}
-                      >
-                        <div className="text-xs opacity-70 mb-1">
-                          {msg.role === "user" ? userName || "You" : "AI Assistant"}
+                      <div className="flex flex-col">
+                        <div className="text-xs text-gray-400 mb-2">
+                          {msg.role === "user" ? userName || "You" : "Assistant"}
                           {msg.timestamp && <span className="ml-2">{formatTime(msg.timestamp)}</span>}
                         </div>
-                        <p className="text-sm leading-relaxed break-words whitespace-pre-line">{msg.content}</p>
+                        <div
+                          className={`p-4 rounded-xl ${
+                            msg.role === "user"
+                              ? "bg-gray-800 text-white"
+                              : "bg-gray-900 border border-gray-800 text-white"
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed whitespace-pre-line">{msg.content}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -520,15 +529,18 @@ export default function Home() {
                 {/* Typing Indicator */}
                 {loading && (
                   <div className="flex justify-start">
-                    <div className="flex items-end gap-3 max-w-[85%] md:max-w-[75%]">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                    <div className="flex gap-4 max-w-[80%]">
+                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
                         <Bot className="h-4 w-4 text-white" />
                       </div>
-                      <div className="bg-white/10 text-gray-100 border border-white/20 rounded-2xl px-4 py-3 backdrop-blur-sm">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-100"></div>
-                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-200"></div>
+                      <div className="flex flex-col">
+                        <div className="text-xs text-gray-400 mb-2">Assistant</div>
+                        <div className="bg-gray-900 border border-gray-800 p-4 rounded-xl">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -539,39 +551,33 @@ export default function Home() {
             </div>
 
             {/* Fixed Bottom Input */}
-            <div className="bg-gray-800/80 backdrop-blur-xl border-t border-white/10 p-4">
+            <div className="border-t border-gray-800 p-4">
               <div className="max-w-4xl mx-auto">
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1 relative">
-                    <input
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault()
-                          sendMessage()
-                        }
-                      }}
-                      placeholder={userName ? `${userName}, type your message...` : "Type your message..."}
-                      className="w-full h-12 md:h-14 px-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
-                      disabled={loading}
-                    />
-                  </div>
-
+                <div className="relative">
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        sendMessage()
+                      }
+                    }}
+                    placeholder="Send a message..."
+                    className="w-full p-4 pr-12 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-gray-700 transition-colors"
+                    disabled={loading}
+                  />
                   <button
                     onClick={sendMessage}
                     disabled={!input.trim() || loading}
-                    className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-white text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
                   >
                     {loading ? (
-                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                      <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full" />
                     ) : (
-                      <Send className="h-5 w-5" />
+                      <Send className="h-4 w-4" />
                     )}
                   </button>
-                </div>
-                <div className="mt-2 text-xs opacity-50 text-center">
-                  Press Enter to send • Shift + Enter for new line
                 </div>
               </div>
             </div>
@@ -582,8 +588,8 @@ export default function Home() {
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-md w-full mx-4 border border-white/10">
-            <h2 className="text-xl font-bold mb-4 text-white">Settings</h2>
+          <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4 text-white">Settings</h2>
 
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
@@ -591,7 +597,7 @@ export default function Home() {
                 type="text"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:outline-none transition-all"
+                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-gray-600 focus:outline-none transition-colors"
                 placeholder="Enter your name..."
               />
             </div>
@@ -601,7 +607,7 @@ export default function Home() {
               <select
                 value={theme}
                 onChange={(e) => setTheme(e.target.value as "dark" | "light")}
-                className="w-full p-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:outline-none transition-all"
+                className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-gray-600 focus:outline-none transition-colors"
               >
                 <option value="dark">Dark</option>
                 <option value="light">Light</option>
@@ -611,13 +617,13 @@ export default function Home() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowSettings(false)}
-                className="px-4 py-2 rounded-xl bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+                className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={saveSettings}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all"
+                className="px-4 py-2 rounded-lg bg-white hover:bg-gray-100 text-black transition-colors"
               >
                 Save
               </button>
