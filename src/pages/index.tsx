@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useRouter } from "next/router"
-import { Send, Plus, MessageSquare, User, Bot, Menu, X, LogOut, Settings, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Send, Plus, MessageSquare, User, Menu, X, LogOut, Settings, Trash2 } from "lucide-react"
+import Image from "next/image"
 
 // Backend URL - Railway'den alındı
 const API_URL = "https://web-production-ceb2.up.railway.app"
@@ -48,13 +49,12 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!router.isReady) return
-
-    const queryId = router.query.id
-    const id = queryId ? String(queryId) : `conv_${Date.now()}`
+    const queryId = new URLSearchParams(window.location.search).get("id")
+    const id = queryId || `conv_${Date.now()}`
 
     setConversationId(id)
-    router.replace(`/?id=${id}`, undefined, { shallow: true })
+    const newUrl = `/?id=${id}`
+    window.history.replaceState({}, "", newUrl)
 
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme") as "dark" | "light"
@@ -62,7 +62,7 @@ export default function Home() {
       if (savedTheme) setTheme(savedTheme)
       if (savedName) setUserName(savedName)
     }
-  }, [router.isReady])
+  }, [])
 
   const fetchConversations = async () => {
     try {
@@ -185,7 +185,8 @@ export default function Home() {
     setConversationId(newId)
     setMessages([])
     setSidebarOpen(false)
-    router.push(`/?id=${newId}`, undefined, { shallow: true })
+    const newUrl = `/?id=${newId}`
+    window.history.pushState({}, "", newUrl)
   }
 
   const deleteConversation = async (id: string) => {
@@ -227,19 +228,6 @@ export default function Home() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
-  const formatConversationTime = (date: Date) => {
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-
-    if (diffInHours < 1) {
-      return "now"
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h`
-    } else {
-      return `${Math.floor(diffInHours / 24)}d`
-    }
-  }
-
   // Login Screen
   if (!isSignedIn) {
     return (
@@ -253,13 +241,13 @@ export default function Home() {
         <div className="w-full max-w-md relative">
           {/* Logo/App Name */}
           <div className="text-center mb-12">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
-              <Bot className="h-10 w-10 text-white" />
+            <div className="w-32 h-32 mx-auto mb-6 relative">
+              <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain" priority />
             </div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-              Thesis Chatbot
+              OrionBot
             </h1>
-            <p className="text-gray-400 text-lg">Your intelligent research assistant</p>
+            <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
           </div>
 
           {/* Login Form */}
@@ -289,7 +277,7 @@ export default function Home() {
                 setUserName("")
                 setIsSignedIn(true)
               }}
-              className="w-full h-14 bg-white/5 backdrop-blur-xl border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+              className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
             >
               <User className="w-5 h-5 mr-3 inline-block" />
               Continue as Guest
@@ -313,11 +301,11 @@ export default function Home() {
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Bot className="h-5 w-5 text-white" />
+                <div className="w-10 h-10 relative">
+                  <Image src="/orionbot-logo.png" alt="OrionBot" fill className="object-contain" />
                 </div>
                 <div>
-                  <h2 className="text-white font-bold text-lg">Thesis Chatbot</h2>
+                  <h2 className="text-white font-bold text-lg">OrionBot</h2>
                   <p className="text-gray-400 text-xs">AI Assistant</p>
                 </div>
               </div>
@@ -358,7 +346,8 @@ export default function Home() {
                       className="flex-1 min-w-0"
                       onClick={() => {
                         setConversationId(id)
-                        router.push(`/?id=${id}`, undefined, { shallow: true })
+                        const newUrl = `/?id=${id}`
+                        window.history.pushState({}, "", newUrl)
                         setSidebarOpen(false)
                       }}
                     >
@@ -428,7 +417,12 @@ export default function Home() {
           <button className="text-gray-400 hover:text-white" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </button>
-          <h1 className="text-white font-semibold">Thesis Chatbot</h1>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 relative">
+              <Image src="/orionbot-logo.png" alt="OrionBot" fill className="object-contain" />
+            </div>
+            <h1 className="text-white font-semibold">OrionBot</h1>
+          </div>
           <div className="w-8"></div>
         </div>
 
@@ -437,11 +431,14 @@ export default function Home() {
           <div className="flex-1 flex items-center justify-center p-6">
             <div className="w-full max-w-3xl mx-auto text-center space-y-8">
               <div className="space-y-6">
+                <div className="w-24 h-24 mx-auto mb-6 relative">
+                  <Image src="/orionbot-logo.png" alt="OrionBot" fill className="object-contain" />
+                </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent leading-tight">
-                  {userName ? `Hello ${userName}!` : "What's on the agenda today?"}
+                  {userName ? `Hello ${userName}!` : "What can I help you with today?"}
                 </h1>
                 <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-                  I'm your AI assistant for thesis research. Ask me anything or start a conversation.
+                  I'm OrionBot, your intelligent AI assistant. Ask me anything or start a conversation.
                 </p>
               </div>
 
@@ -494,8 +491,15 @@ export default function Home() {
                             </span>
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                            <Bot className="h-4 w-4 text-white" />
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
+                            <div className="w-5 h-5 relative">
+                              <Image
+                                src="/orionbot-logo.png"
+                                alt="OrionBot"
+                                fill
+                                className="object-contain brightness-0 invert"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -508,7 +512,7 @@ export default function Home() {
                         }`}
                       >
                         <div className="text-xs opacity-70 mb-1">
-                          {msg.role === "user" ? userName || "You" : "AI Assistant"}
+                          {msg.role === "user" ? userName || "You" : "OrionBot"}
                           {msg.timestamp && <span className="ml-2">{formatTime(msg.timestamp)}</span>}
                         </div>
                         <p className="text-sm leading-relaxed break-words whitespace-pre-line">{msg.content}</p>
@@ -521,8 +525,15 @@ export default function Home() {
                 {loading && (
                   <div className="flex justify-start">
                     <div className="flex items-end gap-3 max-w-[85%] md:max-w-[75%]">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-white" />
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
+                        <div className="w-5 h-5 relative">
+                          <Image
+                            src="/orionbot-logo.png"
+                            alt="OrionBot"
+                            fill
+                            className="object-contain brightness-0 invert"
+                          />
+                        </div>
                       </div>
                       <div className="bg-white/10 text-gray-100 border border-white/20 rounded-2xl px-4 py-3 backdrop-blur-sm">
                         <div className="flex space-x-1">
@@ -583,7 +594,12 @@ export default function Home() {
       {showSettings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-md w-full mx-4 border border-white/10">
-            <h2 className="text-xl font-bold mb-4 text-white">Settings</h2>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 relative">
+                <Image src="/orionbot-logo.png" alt="OrionBot" fill className="object-contain" />
+              </div>
+              <h2 className="text-xl font-bold text-white">OrionBot Settings</h2>
+            </div>
 
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
