@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/router"
 import { useSession, signIn, signOut } from "next-auth/react"
 import { Send, Plus, MessageSquare, User, Menu, X, LogOut, Settings, Trash2 } from "lucide-react"
 import Image from "next/image"
@@ -73,12 +73,13 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const queryId = new URLSearchParams(window.location.search).get("id")
-    const id = queryId || `conv_${Date.now()}`
+    const queryId = router.query.id as string || `conv_${Date.now()}`
 
-    setConversationId(id)
-    const newUrl = `/?id=${id}`
-    window.history.replaceState({}, "", newUrl)
+    setConversationId(queryId)
+    
+    if (!router.query.id) {
+      router.replace(`/?id=${queryId}`, undefined, { shallow: true })
+    }
 
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme") as "dark" | "light"
@@ -86,7 +87,7 @@ export default function Home() {
       if (savedTheme) setTheme(savedTheme)
       if (savedGuestName) setGuestName(savedGuestName)
     }
-  }, [])
+  }, [router])
 
   const fetchConversations = async () => {
     try {
@@ -209,8 +210,7 @@ export default function Home() {
     setConversationId(newId)
     setMessages([])
     setSidebarOpen(false)
-    const newUrl = `/?id=${newId}`
-    window.history.pushState({}, "", newUrl)
+    router.push(`/?id=${newId}`, undefined, { shallow: true })
   }
 
   const deleteConversation = async (id: string) => {
@@ -323,7 +323,7 @@ export default function Home() {
 
           {/* Login Form */}
           <div className="space-y-4">
-            {/* Google Sign In */}
+            {/* Google Sign In Button */}
             <button
               onClick={handleGoogleSignIn}
               disabled={authLoading}
@@ -351,10 +351,10 @@ export default function Home() {
               <div className="flex-grow border-t border-gray-600"></div>
             </div>
 
-            {/* Guest Login */}
+            {/* Guest Login Form */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2 text-gray-300">Your Name (Optional)</label>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
                 <input
                   type="text"
                   value={guestName}
@@ -366,12 +366,22 @@ export default function Home() {
 
               <button
                 onClick={handleGuestContinue}
-                className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-3"
+                className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
               >
-                <User className="w-5 h-5" />
-                Continue as Guest
+                Continue
               </button>
             </div>
+
+            <button
+              onClick={() => {
+                setGuestName("")
+                handleGuestContinue()
+              }}
+              className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
+            >
+              <User className="w-5 h-5" />
+              Continue as Guest
+            </button>
           </div>
         </div>
       </div>
@@ -436,8 +446,7 @@ export default function Home() {
                       className="flex-1 min-w-0"
                       onClick={() => {
                         setConversationId(id)
-                        const newUrl = `/?id=${id}`
-                        window.history.pushState({}, "", newUrl)
+                        router.push(`/?id=${id}`, undefined, { shallow: true })
                         setSidebarOpen(false)
                       }}
                     >
@@ -657,3 +666,146 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            {/* Fixed Bottom Input */}
+            <div className="bg-gray-800/80 backdrop-blur-xl border-t border-white/10 p-4">
+              <div className="max-w-4xl mx-auto">
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1 relative">
+                    <input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          sendMessage()
+                        }
+                      }}
+                      placeholder={`${getCurrentUserName()}, type your message...`}
+                      className="w-full h-12 md:h-14 px-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <button
+                    onClick={sendMessage}
+                    disabled={!input.trim() || loading}
+                    className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center"
+                  >
+                    {loading ? (
+                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                <div className="mt-2 text-xs opacity-50 text-center">
+                  Press Enter to send • Shift + Enter for new line
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-md w-full mx-4 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 relative">
+                <Image src="/orionbot-logo.png" alt="OrionBot" fill className="object-contain" />
+              </div>
+              <h2 className="text-xl font-bold text-white">OrionBot Settings</h2>
+            </div>
+
+            {/* User Info */}
+            <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center">
+                  {session?.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt="Profile"
+                      width={40}
+                      height={40}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <span className="text-white font-bold">
+                      {getCurrentUserName().charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-white font-medium">{getCurrentUserName()}</p>
+                  <p className="text-gray-400 text-sm">
+                    {session?.user ? session.user.email : "Guest User"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Guest Name Input (only for guest users) */}
+            {!session?.user && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:outline-none transition-all"
+                  placeholder="Enter your name..."
+                />
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2 text-gray-300">Theme</label>
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value as "dark" | "light")}
+                className="w-full p-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:outline-none transition-all"
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="px-4 py-2 rounded-xl bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveSettings}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        .delay-100 {
+          animation-delay: 0.1s;
+        }
+        .delay-200 {
+          animation-delay: 0.2s;
+        }
+        .delay-1000 {
+          animation-delay: 1s;
+        }
+      `}</style>
+    </div>
+  )
+}
