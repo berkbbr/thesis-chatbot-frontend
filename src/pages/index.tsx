@@ -240,6 +240,66 @@ export default function Home() {
     }
   }
 
+  // Login Screen
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="w-full max-w-md relative">
+          {/* Logo/App Name */}
+          <div className="text-center mb-12">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
+              <Bot className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
+              Thesis Chatbot
+            </h1>
+            <p className="text-gray-400 text-lg">Your intelligent research assistant</p>
+          </div>
+
+          {/* Login Form */}
+          <div className="space-y-4">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-blue-500 focus:outline-none transition-all"
+                  placeholder="Enter your name..."
+                />
+              </div>
+
+              <button
+                onClick={() => setIsSignedIn(true)}
+                className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+              >
+                Continue
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setUserName("")
+                setIsSignedIn(true)
+              }}
+              className="w-full h-14 bg-white/5 backdrop-blur-xl border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+            >
+              <User className="w-5 h-5 mr-3 inline-block" />
+              Continue as Guest
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden">
       {/* Sidebar */}
@@ -332,7 +392,7 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <p className="text-white font-medium text-sm">{userName || "Guest User"}</p>
-                <p className="text-gray-400 text-xs">{isSignedIn ? "Signed In" : "Guest Mode"}</p>
+                <p className="text-gray-400 text-xs">{userName ? "Signed In" : "Guest Mode"}</p>
               </div>
               <button
                 onClick={() => setShowSettings(true)}
@@ -342,22 +402,13 @@ export default function Home() {
               </button>
             </div>
 
-            {isSignedIn ? (
-              <button
-                className="w-full text-red-400 hover:text-red-300 text-sm px-3 py-2 bg-gray-700/50 hover:bg-red-500/20 rounded-lg transition-colors flex items-center justify-center gap-2"
-                onClick={() => setIsSignedIn(false)}
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
-            ) : (
-              <button
-                className="w-full text-blue-400 bg-gray-700/50 hover:bg-blue-500/20 px-3 py-2 rounded-lg text-sm transition-colors"
-                onClick={() => setIsSignedIn(true)}
-              >
-                Sign In
-              </button>
-            )}
+            <button
+              className="w-full text-red-400 hover:text-red-300 text-sm px-3 py-2 bg-gray-700/50 hover:bg-red-500/20 rounded-lg transition-colors flex items-center justify-center gap-2"
+              onClick={() => setIsSignedIn(false)}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
           </div>
         </div>
       </div>
