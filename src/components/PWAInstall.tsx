@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Download } from 'lucide-react'
+import { X, Download, Smartphone } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -13,8 +13,19 @@ interface BeforeInstallPromptEvent extends Event {
 export default function PWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstallBanner, setShowInstallBanner] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
+  const [isAndroid, setIsAndroid] = useState(false)
+  const [isInstallable, setIsInstallable] = useState(false)
 
   useEffect(() => {
+    // Device detection
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
+    const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream
+    const isAndroidDevice = /android/i.test(userAgent)
+    
+    setIsIOS(isIOSDevice)
+    setIsAndroid(isAndroidDevice)
+
     // Service Worker'ı kaydet
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -28,10 +39,11 @@ export default function PWAInstall() {
       })
     }
 
-    // Install prompt'u yakala
+    // Install prompt'u yakala (Chrome/Edge)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
+      setIsInstallable(true)
       setShowInstallBanner(true)
     }
 
@@ -42,9 +54,22 @@ export default function PWAInstall() {
       console.log('PWA was installed')
       setShowInstallBanner(false)
       setDeferredPrompt(null)
+      setIsInstallable(false)
     }
 
     window.addEventListener('appinstalled', handleAppInstalled)
+
+    // iOS için manuel kontrol (beforeinstallprompt iOS'ta çalışmaz)
+    if (isIOSDevice) {
+      const isInStandaloneMode = (window.navigator as any).standalone
+      const hasBeenDismissed = localStorage.getItem('ios-pwa-dismissed')
+      
+      if (!isInStandaloneMode && !hasBeenDismissed) {
+        setTimeout(() => {
+          setShowInstallBanner(true)
+        }, 3000) // 3 saniye bekle
+      }
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -53,43 +78,50 @@ export default function PWAInstall() {
   }, [])
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return
-
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt')
-    } else {
-      console.log('User dismissed the install prompt')
+    if (deferredPrompt && !isIOS) {
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt')
+      } else {
+        console.log('User dismissed the install prompt')
+      }
+      
+      setDeferredPrompt(null)
+      setShowInstallBanner(false)
     }
-    
-    setDeferredPrompt(null)
-    setShowInstallBanner(false)
   }
 
   const handleDismiss = () => {
     setShowInstallBanner(false)
-    // Kullanıcı dismiss ettiyse 24 saat sonra tekrar göster
-    localStorage.setItem('pwa-dismissed', Date.now().toString())
+    
+    if (isIOS) {
+      localStorage.setItem('ios-pwa-dismissed', 'true')
+    } else {
+      localStorage.setItem('pwa-dismissed', Date.now().toString())
+    }
   }
 
-  // Eğer daha önce dismiss edilmişse ve 24 saat geçmemişse gösterme
+  // Eğer daha önce dismiss edilmişse gösterme kontrolü
   useEffect(() => {
-    const dismissed = localStorage.getItem('pwa-dismissed')
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed)
-      const now = Date.now()
-      const twentyFourHours = 24 * 60 * 60 * 1000
-      
-      if (now - dismissedTime < twentyFourHours) {
-        setShowInstallBanner(false)
-        return
+    if (!isIOS) {
+      const dismissed = localStorage.getItem('pwa-dismissed')
+      if (dismissed) {
+        const dismissedTime = parseInt(dismissed)
+        const now = Date.now()
+        const twentyFourHours = 24 * 60 * 60 * 1000
+        
+        if (now - dismissedTime < twentyFourHours) {
+          setShowInstallBanner(false)
+          return
+        }
       }
     }
-  }, [])
+  }, [isIOS])
 
-  if (!showInstallBanner || !deferredPrompt) {
+  // Eğer hiçbir install seçeneği yoksa gösterme
+  if (!showInstallBanner || (!isInstallable && !isIOS)) {
     return null
   }
 
@@ -99,24 +131,38 @@ export default function PWAInstall() {
         <div className="flex items-start gap-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <Download className="w-5 h-5 text-white" />
-              <h3 className="text-white font-semibold text-sm">Install OrionBot</h3>
+              {isIOS ? <Smartphone className="w-5 h-5 text-white" /> : <Download className="w-5 h-5 text-white" />}
+              <h3 className="text-white font-semibold text-sm">
+                {isIOS ? 'Add to Home Screen' : 'Install OrionBot'}
+              </h3>
             </div>
-            <p className="text-white/90 text-xs mb-3">
-              Add OrionBot to your home screen for quick access and a better experience!
-            </p>
+            
+            {isIOS ? (
+              <div className="text-white/90 text-xs mb-3">
+                <p className="mb-2">Install this app on your iPhone:</p>
+                <p>1. Tap the <strong>Share</strong> button below</p>
+                <p>2. Select <strong>"Add to Home Screen"</strong></p>
+              </div>
+            ) : (
+              <p className="text-white/90 text-xs mb-3">
+                Add OrionBot to your home screen for quick access and a better experience!
+              </p>
+            )}
+            
             <div className="flex gap-2">
-              <button
-                onClick={handleInstallClick}
-                className="bg-white text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors"
-              >
-                Install App
-              </button>
+              {!isIOS && (
+                <button
+                  onClick={handleInstallClick}
+                  className="bg-white text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Install App
+                </button>
+              )}
               <button
                 onClick={handleDismiss}
                 className="bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-white/30 transition-colors"
               >
-                Not Now
+                {isIOS ? 'Maybe Later' : 'Not Now'}
               </button>
             </div>
           </div>

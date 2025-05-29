@@ -41,7 +41,7 @@ export default function Document() {
         <meta property="og:type" content="website" />
         
         {/* Viewport for mobile */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover" />
       </Head>
       <body className="antialiased">
         <Main />
