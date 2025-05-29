@@ -311,7 +311,7 @@ export default function Home() {
         <div className="w-full max-w-md relative">
           {/* Logo/App Name */}
           <div className="text-center mb-12">
-            <div className="w-48 h-48 mx-auto mb-8 relative">
+            <div className="w-64 h-64 mx-auto mb-8 relative">
               <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain" priority />
             </div>
             <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
