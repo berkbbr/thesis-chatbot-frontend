@@ -4,25 +4,14 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Send, Plus, MessageSquare, User, Menu, X, LogOut, Settings, Trash2 } from "lucide-react"
 import Image from "next/image"
-import Head from 'next/head'
-import Script from 'next/script'
 
-// Environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://web-production-ceb2.up.railway.app"
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "896458910193-urok245pedns1p7aa2rn9le5figs47e.apps.googleusercontent.com"
+// Backend URL - Railway'den alındı
+const API_URL = "https://web-production-ceb2.up.railway.app"
 
 type Message = {
   role: "user" | "assistant"
   content: string
   timestamp?: Date
-}
-
-// Google types
-declare global {
-  interface Window {
-    google: any;
-    googleAuthCallback: (response: any) => void;
-  }
 }
 
 export default function Home() {
@@ -40,11 +29,6 @@ export default function Home() {
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isChatMode, setIsChatMode] = useState(false)
-  
-  // Auth states
-  const [user, setUser] = useState<any>(null)
-  const [authToken, setAuthToken] = useState<string>("")
-  const [googleLoaded, setGoogleLoaded] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -60,136 +44,8 @@ export default function Home() {
     setIsChatMode(messages.length > 0)
   }, [messages])
 
-  // Google Login fonksiyonu - Global scope'ta
-  const handleGoogleLogin = async (credentialResponse: any) => {
-    try {
-      console.log("Google login response:", credentialResponse)
-      
-      if (!credentialResponse.credential) {
-        console.error("No credential in response")
-        return
-      }
-      
-      const response = await fetch(`${API_URL}/auth/google`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: credentialResponse.credential
-        })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setAuthToken(data.access_token)
-        setUser(data.user)
-        setIsSignedIn(true)
-        setUserName(data.user.name)
-        
-        // Token'ı localStorage'a kaydet
-        if (typeof window !== "undefined") {
-          localStorage.setItem("auth_token", data.access_token)
-          localStorage.setItem("user_data", JSON.stringify(data.user))
-        }
-        
-        console.log("Login successful:", data.user)
-      } else {
-        const errorData = await response.text()
-        console.error("Login failed:", response.status, errorData)
-        alert("Login failed. Please try again.")
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      alert("Login error. Please check your connection.")
-    }
-  }
-
-  // Global callback function for Google
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.googleAuthCallback = handleGoogleLogin
-    }
-  }, [])
-
-  // Google script yüklendiğinde
-  const onGoogleLoad = () => {
-    console.log("Google script loaded")
-    setGoogleLoaded(true)
-    
-    if (typeof window !== "undefined" && window.google) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: window.googleAuthCallback,
-          auto_select: false,
-          cancel_on_tap_outside: true
-        })
-        
-        // Render button
-        const buttonDiv = document.getElementById("google-signin-button")
-        if (buttonDiv && !isSignedIn) {
-          window.google.accounts.id.renderButton(buttonDiv, {
-            theme: "outline",
-            size: "large",
-            text: "signin_with",
-            shape: "rectangular",
-            width: "100%"
-          })
-        }
-        
-        console.log("Google Sign-In initialized")
-      } catch (error) {
-        console.error("Google initialization error:", error)
-      }
-    }
-  }
-
-  // Sayfa yüklendiğinde token kontrol et
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedToken = localStorage.getItem("auth_token")
-      const savedUser = localStorage.getItem("user_data")
-      
-      if (savedToken && savedUser) {
-        try {
-          setAuthToken(savedToken)
-          setUser(JSON.parse(savedUser))
-          setIsSignedIn(true)
-          setUserName(JSON.parse(savedUser).name)
-        } catch (error) {
-          console.error("Error loading saved auth:", error)
-          localStorage.removeItem("auth_token")
-          localStorage.removeItem("user_data")
-        }
-      }
-    }
-  }, [])
-
-  // Re-render Google button when needed
-  useEffect(() => {
-    if (googleLoaded && !isSignedIn && typeof window !== "undefined" && window.google) {
-      setTimeout(() => {
-        const buttonDiv = document.getElementById("google-signin-button")
-        if (buttonDiv && buttonDiv.innerHTML === "") {
-          try {
-            window.google.accounts.id.renderButton(buttonDiv, {
-              theme: "outline",
-              size: "large", 
-              text: "signin_with",
-              shape: "rectangular",
-              width: "100%"
-            })
-          } catch (error) {
-            console.error("Error re-rendering Google button:", error)
-          }
-        }
-      }, 500)
-    }
-  }, [googleLoaded, isSignedIn])
-
   const getUserId = () => {
-    return user ? user.email : "guest"
+    return "guest"
   }
 
   useEffect(() => {
@@ -204,18 +60,13 @@ export default function Home() {
       const savedTheme = localStorage.getItem("theme") as "dark" | "light"
       const savedName = localStorage.getItem("userName")
       if (savedTheme) setTheme(savedTheme)
-      if (savedName && !user) setUserName(savedName)
+      if (savedName) setUserName(savedName)
     }
-  }, [user])
+  }, [])
 
   const fetchConversations = async () => {
     try {
-      const headers: any = { 'Content-Type': 'application/json' }
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`
-      }
-      
-      const res = await fetch(`${API_URL}/conversations/${getUserId()}`, { headers })
+      const res = await fetch(`${API_URL}/conversations/${getUserId()}`)
       if (!res.ok) return
 
       const data = await res.json()
@@ -228,12 +79,7 @@ export default function Home() {
 
   const fetchHistory = async (id: string) => {
     try {
-      const headers: any = { 'Content-Type': 'application/json' }
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`
-      }
-      
-      const res = await fetch(`${API_URL}/history/${id}`, { headers })
+      const res = await fetch(`${API_URL}/history/${id}`)
       if (!res.ok) return
 
       const data = await res.json()
@@ -265,7 +111,7 @@ export default function Home() {
     if (!conversationId) return
     fetchHistory(conversationId)
     fetchConversations()
-  }, [conversationId, authToken])
+  }, [conversationId])
 
   const sendMessage = async () => {
     if (!input.trim() || !conversationId) return
@@ -282,14 +128,9 @@ export default function Home() {
     setLoading(true)
 
     try {
-      const headers: any = { 'Content-Type': 'application/json' }
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`
-      }
-
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
           conversation_id: conversationId,
@@ -359,14 +200,8 @@ export default function Home() {
         return newTitles
       })
 
-      const headers: any = { 'Content-Type': 'application/json' }
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`
-      }
-
       await fetch(`${API_URL}/conversations/${id}`, {
         method: "DELETE",
-        headers
       })
 
       if (conversationId === id) {
@@ -389,23 +224,6 @@ export default function Home() {
     setShowSettings(false)
   }
 
-  const handleSignOut = () => {
-    // Google sign out
-    if (typeof window !== "undefined" && window.google) {
-      window.google.accounts.id.disableAutoSelect()
-    }
-    
-    setIsSignedIn(false)
-    setUser(null)
-    setAuthToken("")
-    setUserName("")
-    
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token")
-      localStorage.removeItem("user_data")
-    }
-  }
-
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
@@ -413,100 +231,65 @@ export default function Home() {
   // Login Screen
   if (!isSignedIn) {
     return (
-      <>
-        <Head>
-          <title>OrionBot - Login</title>
-          <meta name="google-signin-client_id" content={GOOGLE_CLIENT_ID} />
-        </Head>
-        <Script 
-          src="https://accounts.google.com/gsi/client" 
-          strategy="beforeInteractive"
-          onLoad={onGoogleLoad}
-        />
-        
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
-          {/* Background Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="w-full max-w-md relative">
+          {/* Logo/App Name */}
+          <div className="text-center mb-12">
+            <div className="w-32 h-32 mx-auto mb-6 relative">
+              <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain" priority />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
+              OrionBot
+            </h1>
+            <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
           </div>
 
-          <div className="w-full max-w-md relative">
-            {/* Logo */}
-            <div className="text-center mb-12">
-              <div className="w-48 h-48 mx-auto mb-6 relative">
-                <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain" priority />
-              </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-                OrionBot
-              </h1>
-              <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
-            </div>
-
-            {/* Login Options */}
-            <div className="space-y-6">
-              {/* Google Sign In */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
-                <div className="text-center mb-4">
-                  <p className="text-white text-lg font-medium">Sign in to continue</p>
-                  <p className="text-gray-400 text-sm mt-2">Sign in with your Google account</p>
-                </div>
-                
-                <div className="mb-4">
-                  <div id="google-signin-button" className="w-full flex justify-center"></div>
-                </div>
-                
-                {!googleLoaded && (
-                  <div className="text-center text-gray-400 text-sm">
-                    Loading Google Sign-In...
-                  </div>
-                )}
+          {/* Login Form */}
+          <div className="space-y-4">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-blue-500 focus:outline-none transition-all"
+                  placeholder="Enter your name..."
+                />
               </div>
 
-              {/* Manual Name Input */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Or enter your name</label>
-                  <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-blue-500 focus:outline-none transition-all"
-                    placeholder="Enter your name..."
-                  />
-                </div>
-
-                <button
-                  onClick={() => setIsSignedIn(true)}
-                  disabled={!userName.trim()}
-                  className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Continue with Name
-                </button>
-              </div>
-
-              {/* Guest Login */}
               <button
-                onClick={() => {
-                  setUserName("Guest")
-                  setIsSignedIn(true)
-                }}
-                className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+                onClick={() => setIsSignedIn(true)}
+                className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
               >
-                <User className="w-5 h-5 mr-3 inline-block" />
-                Continue as Guest
+                Continue
               </button>
             </div>
+
+            <button
+              onClick={() => {
+                setUserName("")
+                setIsSignedIn(true)
+              }}
+              className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+            >
+              <User className="w-5 h-5 mr-3 inline-block" />
+              Continue as Guest
+            </button>
           </div>
         </div>
-      </>
+      </div>
     )
   }
 
-  // Rest of the component remains the same...
   return (
     <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden">
-      {/* Sidebar and main content - keep existing code */}
       {/* Sidebar */}
       <div
         className={`${
@@ -593,20 +376,12 @@ export default function Home() {
           {/* User Profile */}
           <div className="p-4 border-t border-white/10">
             <div className="flex items-center gap-3 mb-3">
-              {user && user.avatar_url ? (
-                <div className="w-10 h-10 rounded-full overflow-hidden">
-                  <Image src={user.avatar_url} alt="User Avatar" width={40} height={40} className="object-cover" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                  {userName ? userName.charAt(0).toUpperCase() : <User className="h-5 w-5" />}
-                </div>
-              )}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                {userName ? userName.charAt(0).toUpperCase() : <User className="h-5 w-5" />}
+              </div>
               <div className="flex-1">
                 <p className="text-white font-medium text-sm">{userName || "Guest User"}</p>
-                <p className="text-gray-400 text-xs">
-                  {user ? `${user.email}${user.is_admin ? ' (Admin)' : ''}` : "Guest Mode"}
-                </p>
+                <p className="text-gray-400 text-xs">{userName ? "Signed In" : "Guest Mode"}</p>
               </div>
               <button
                 onClick={() => setShowSettings(true)}
@@ -618,7 +393,7 @@ export default function Home() {
 
             <button
               className="w-full text-red-400 hover:text-red-300 text-sm px-3 py-2 bg-gray-700/50 hover:bg-red-500/20 rounded-lg transition-colors flex items-center justify-center gap-2"
-              onClick={handleSignOut}
+              onClick={() => setIsSignedIn(false)}
             >
               <LogOut className="h-4 w-4" />
               Sign Out
@@ -697,7 +472,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Chat Mode - Keep existing code */}
+        {/* Chat Mode */}
         {isChatMode && (
           <>
             {/* Chat Messages */}
@@ -710,8 +485,13 @@ export default function Home() {
                     >
                       <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center">
                         {msg.role === "user" ? (
-                          user && user.avatar_url ? (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                              {userName ? userName.charAt(0).toUpperCase() : "U"}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
                             <div className="w-5 h-5 relative">
                               <Image
                                 src="/orionbot-logo.png"
@@ -872,15 +652,4 @@ export default function Home() {
       `}</style>
     </div>
   )
-}w-8 h-8 rounded-full overflow-hidden">
-                              <Image src={user.avatar_url} alt="User" width={32} height={32} className="object-cover" />
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">
-                                {userName ? userName.charAt(0).toUpperCase() : "U"}
-                              </span>
-                            </div>
-                          )
-                        ) : (
-                          <div className="
+}
