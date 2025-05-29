@@ -1,5 +1,5 @@
-import NextAuth from "next-auth"
-import GoogleProvider from "next-auth/providers/google"
+import NextAuth from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
 
 export default NextAuth({
   providers: [
@@ -11,7 +11,9 @@ export default NextAuth({
   session: { strategy: "jwt" },
   callbacks: {
     async session({ session, token }) {
-      session.user.id = token.sub
+      if (session.user) {
+        session.user.id = token.sub
+      }
       return session
     }
   }
