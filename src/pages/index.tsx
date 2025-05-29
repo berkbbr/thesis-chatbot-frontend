@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/router"
-import { Send, Plus, MessageSquare, User, Bot, Menu, X, LogOut, Settings, Trash2, ChevronDown } from 'lucide-react'
+import { Send, Plus, MessageSquare, User, Bot, Menu, X, LogOut, Settings, Trash2, ChevronDown } from "lucide-react"
 
 // Backend URL - Railway'den alındı
 const API_URL = "https://web-production-ceb2.up.railway.app"
@@ -225,6 +225,19 @@ export default function Home() {
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  }
+
+  const formatConversationTime = (date: Date) => {
+    const now = new Date()
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+
+    if (diffInHours < 1) {
+      return "now"
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h`
+    } else {
+      return `${Math.floor(diffInHours / 24)}d`
+    }
   }
 
   const suggestionCards = [
