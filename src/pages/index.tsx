@@ -4,14 +4,24 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Send, Plus, MessageSquare, User, Menu, X, LogOut, Settings, Trash2 } from "lucide-react"
 import Image from "next/image"
+import Head from 'next/head'
+import Script from 'next/script'
 
-// Backend URL - Railway'den alındı
-const API_URL = "https://web-production-ceb2.up.railway.app"
+// Environment variables
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://web-production-ceb2.up.railway.app"
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "896458910193-urok245pedns1p7aa2rn9le5figs47e.apps.googleusercontent.com"
 
 type Message = {
   role: "user" | "assistant"
   content: string
   timestamp?: Date
+}
+
+// Google types
+declare global {
+  interface Window {
+    google: any;
+  }
 }
 
 export default function Home() {
@@ -29,6 +39,10 @@ export default function Home() {
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isChatMode, setIsChatMode] = useState(false)
+  
+  // Auth states
+  const [user, setUser] = useState<any>(null)
+  const [authToken, setAuthToken] = useState<string>("")
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -44,8 +58,84 @@ export default function Home() {
     setIsChatMode(messages.length > 0)
   }, [messages])
 
+  // Google Login fonksiyonu
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    try {
+      console.log("Google login response:", credentialResponse)
+      
+      const response = await fetch(`${API_URL}/auth/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: credentialResponse.credential
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setAuthToken(data.access_token)
+        setUser(data.user)
+        setIsSignedIn(true)
+        setUserName(data.user.name)
+        
+        // Token'ı localStorage'a kaydet
+        if (typeof window !== "undefined") {
+          localStorage.setItem("auth_token", data.access_token)
+          localStorage.setItem("user_data", JSON.stringify(data.user))
+        }
+        
+        console.log("Login successful:", data.user)
+      } else {
+        console.error("Login failed:", response.statusText)
+        alert("Login failed. Please try again.")
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      alert("Login error. Please check your connection.")
+    }
+  }
+
+  // Sayfa yüklendiğinde token kontrol et
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedToken = localStorage.getItem("auth_token")
+      const savedUser = localStorage.getItem("user_data")
+      
+      if (savedToken && savedUser) {
+        setAuthToken(savedToken)
+        setUser(JSON.parse(savedUser))
+        setIsSignedIn(true)
+        setUserName(JSON.parse(savedUser).name)
+      }
+    }
+  }, [])
+
+  // Google button initialize et
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.google && !isSignedIn) {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleLogin
+      })
+      
+      // Butonu render et
+      const buttonDiv = document.getElementById("google-signin-button")
+      if (buttonDiv) {
+        window.google.accounts.id.renderButton(buttonDiv, { 
+          theme: "filled_blue", 
+          size: "large",
+          text: "signin_with",
+          shape: "rectangular",
+          width: "100%"
+        })
+      }
+    }
+  }, [isSignedIn])
+
   const getUserId = () => {
-    return "guest"
+    return user ? user.email : "guest"
   }
 
   useEffect(() => {
@@ -60,13 +150,18 @@ export default function Home() {
       const savedTheme = localStorage.getItem("theme") as "dark" | "light"
       const savedName = localStorage.getItem("userName")
       if (savedTheme) setTheme(savedTheme)
-      if (savedName) setUserName(savedName)
+      if (savedName && !user) setUserName(savedName)
     }
-  }, [])
+  }, [user])
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch(`${API_URL}/conversations/${getUserId()}`)
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`
+      }
+      
+      const res = await fetch(`${API_URL}/conversations/${getUserId()}`, { headers })
       if (!res.ok) return
 
       const data = await res.json()
@@ -79,7 +174,12 @@ export default function Home() {
 
   const fetchHistory = async (id: string) => {
     try {
-      const res = await fetch(`${API_URL}/history/${id}`)
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`
+      }
+      
+      const res = await fetch(`${API_URL}/history/${id}`, { headers })
       if (!res.ok) return
 
       const data = await res.json()
@@ -111,7 +211,7 @@ export default function Home() {
     if (!conversationId) return
     fetchHistory(conversationId)
     fetchConversations()
-  }, [conversationId])
+  }, [conversationId, authToken])
 
   const sendMessage = async () => {
     if (!input.trim() || !conversationId) return
@@ -128,9 +228,14 @@ export default function Home() {
     setLoading(true)
 
     try {
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`
+      }
+
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           message: userMessage,
           conversation_id: conversationId,
@@ -200,8 +305,14 @@ export default function Home() {
         return newTitles
       })
 
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`
+      }
+
       await fetch(`${API_URL}/conversations/${id}`, {
         method: "DELETE",
+        headers
       })
 
       if (conversationId === id) {
@@ -224,6 +335,18 @@ export default function Home() {
     setShowSettings(false)
   }
 
+  const handleSignOut = () => {
+    setIsSignedIn(false)
+    setUser(null)
+    setAuthToken("")
+    setUserName("")
+    
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("auth_token")
+      localStorage.removeItem("user_data")
+    }
+  }
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
@@ -231,89 +354,89 @@ export default function Home() {
   // Login Screen
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
-        {/* Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-
-        <div className="w-full max-w-md relative">
-          {/* Logo Only */}
-          <div className="text-center mb-12">
-            <div className="w-48 h-48 mx-auto mb-6 relative">
-              <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain" priority />
-            </div>
-            <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
+      <>
+        <Head>
+          <title>OrionBot - Login</title>
+          <meta name="google-signin-client_id" content={GOOGLE_CLIENT_ID} />
+        </Head>
+        <Script 
+          src="https://accounts.google.com/gsi/client" 
+          strategy="beforeInteractive"
+        />
+        
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
+          {/* Background Elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
           </div>
 
-          {/* Login Form */}
-          <div className="space-y-4">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-blue-500 focus:outline-none transition-all"
-                  placeholder="Enter your name..."
-                />
+          <div className="w-full max-w-md relative">
+            {/* Logo */}
+            <div className="text-center mb-12">
+              <div className="w-48 h-48 mx-auto mb-6 relative">
+                <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain" priority />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
+                OrionBot
+              </h1>
+              <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
+            </div>
+
+            {/* Login Form */}
+            <div className="space-y-6">
+              {/* Google Sign In Button */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
+                <div className="text-center mb-4">
+                  <p className="text-white text-lg font-medium">Sign in to continue</p>
+                  <p className="text-gray-400 text-sm mt-2">Login with your Google account</p>
+                </div>
+                
+                <div className="flex justify-center">
+                  <div id="google-signin-button" className="w-full"></div>
+                </div>
               </div>
 
+              {/* Name Input & Continue */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-blue-500 focus:outline-none transition-all"
+                    placeholder="Enter your name..."
+                  />
+                </div>
+
+                <button
+                  onClick={() => setIsSignedIn(true)}
+                  className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+                >
+                  Continue
+                </button>
+              </div>
+
+              {/* Guest Login */}
               <button
-                onClick={() => setIsSignedIn(true)}
-                className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+                onClick={() => {
+                  setUserName("Guest")
+                  setIsSignedIn(true)
+                }}
+                className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
               >
-                Continue
+                <User className="w-5 h-5 mr-3 inline-block" />
+                Continue as Guest
               </button>
             </div>
-
-            <button
-              onClick={() => {
-                setUserName("")
-                setIsSignedIn(true)
-              }}
-              className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
-            >
-              <User className="w-5 h-5 mr-3 inline-block" />
-              Continue as Guest
-            </button>
-            <button
-              onClick={() => {
-                // Google sign-in logic would go here
-                // For now, we'll just sign in with a default Google user
-                setUserName("Google User")
-                setIsSignedIn(true)
-              }}
-              className="w-full h-14 bg-white hover:bg-gray-100 text-gray-900 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-3 border border-gray-300"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              Continue with Google
-            </button>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
+  // Ana uygulama (değişen kısımlar sadece Sign Out butonu)
   return (
     <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden">
       {/* Sidebar */}
@@ -402,12 +525,20 @@ export default function Home() {
           {/* User Profile */}
           <div className="p-4 border-t border-white/10">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                {userName ? userName.charAt(0).toUpperCase() : <User className="h-5 w-5" />}
-              </div>
+              {user && user.avatar_url ? (
+                <div className="w-10 h-10 rounded-full overflow-hidden">
+                  <Image src={user.avatar_url} alt="User Avatar" width={40} height={40} className="object-cover" />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                  {userName ? userName.charAt(0).toUpperCase() : <User className="h-5 w-5" />}
+                </div>
+              )}
               <div className="flex-1">
                 <p className="text-white font-medium text-sm">{userName || "Guest User"}</p>
-                <p className="text-gray-400 text-xs">{userName ? "Signed In" : "Guest Mode"}</p>
+                <p className="text-gray-400 text-xs">
+                  {user ? `${user.email}${user.is_admin ? ' (Admin)' : ''}` : "Guest Mode"}
+                </p>
               </div>
               <button
                 onClick={() => setShowSettings(true)}
@@ -419,7 +550,7 @@ export default function Home() {
 
             <button
               className="w-full text-red-400 hover:text-red-300 text-sm px-3 py-2 bg-gray-700/50 hover:bg-red-500/20 rounded-lg transition-colors flex items-center justify-center gap-2"
-              onClick={() => setIsSignedIn(false)}
+              onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4" />
               Sign Out
@@ -436,7 +567,7 @@ export default function Home() {
         />
       )}
 
-      {/* Main Content */}
+      {/* Main Content - AYNI KALSIN */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
         <div className="lg:hidden bg-gray-800/80 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
@@ -498,7 +629,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Chat Mode */}
+        {/* Chat Mode - AYNI KALSIN */}
         {isChatMode && (
           <>
             {/* Chat Messages */}
@@ -511,11 +642,17 @@ export default function Home() {
                     >
                       <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center">
                         {msg.role === "user" ? (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                              {userName ? userName.charAt(0).toUpperCase() : "U"}
-                            </span>
-                          </div>
+                          user && user.avatar_url ? (
+                            <div className="w-8 h-8 rounded-full overflow-hidden">
+                              <Image src={user.avatar_url} alt="User" width={32} height={32} className="object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">
+                                {userName ? userName.charAt(0).toUpperCase() : "U"}
+                              </span>
+                            </div>
+                          )
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
                             <div className="w-5 h-5 relative">
