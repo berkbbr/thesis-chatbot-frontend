@@ -69,7 +69,7 @@ export default function Home() {
   }
 
   const isAuthenticated = () => {
-    return session?.user || guestName.trim() !== ""
+    return session?.user || guestName === "Guest"
   }
 
   useEffect(() => {
@@ -265,9 +265,8 @@ export default function Home() {
   }
 
   const handleGuestContinue = () => {
-    if (guestName.trim()) {
-      localStorage.setItem("guestName", guestName.trim())
-    }
+    setGuestName("Guest") // Otomatik olarak "Guest" adını ata
+    localStorage.setItem("guestName", "Guest")
   }
 
   const handleSignOut = async () => {
@@ -351,33 +350,10 @@ export default function Home() {
               <div className="flex-grow border-t border-gray-600"></div>
             </div>
 
-            {/* Guest Login Form */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
-                <input
-                  type="text"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-700/50 text-white border border-gray-600/50 focus:border-blue-500 focus:outline-none transition-all"
-                  placeholder="Enter your name..."
-                />
-              </div>
-
-              <button
-                onClick={handleGuestContinue}
-                className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
-              >
-                Continue
-              </button>
-            </div>
-
+            {/* Guest Login Button */}
             <button
-              onClick={() => {
-                setGuestName("")
-                handleGuestContinue()
-              }}
-              className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-2xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
+              onClick={handleGuestContinue}
+              className="w-full h-14 bg-white/5 backdrop-blur-xl border border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-3"
             >
               <User className="w-5 h-5" />
               Continue as Guest
