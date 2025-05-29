@@ -289,7 +289,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 relative mx-auto mb-4">
+          <div className="w-24 h-24 relative mx-auto mb-4">
             <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain animate-pulse" />
           </div>
           <div className="text-white text-lg">Loading...</div>
@@ -311,12 +311,9 @@ export default function Home() {
         <div className="w-full max-w-md relative">
           {/* Logo/App Name */}
           <div className="text-center mb-12">
-            <div className="w-32 h-32 mx-auto mb-6 relative">
+            <div className="w-48 h-48 mx-auto mb-8 relative">
               <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain" priority />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-              OrionBot
-            </h1>
             <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
           </div>
 
@@ -452,19 +449,9 @@ export default function Home() {
           <div className="p-4 border-t border-white/10">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                {session?.user?.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt="Profile"
-                    width={40}
-                    height={40}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <span className="text-sm">
-                    {getCurrentUserName().charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <span className="text-sm">
+                  {getCurrentUserName().charAt(0).toUpperCase()}
+                </span>
               </div>
               <div className="flex-1">
                 <p className="text-white font-medium text-sm">{getCurrentUserName()}</p>
@@ -575,19 +562,9 @@ export default function Home() {
                       <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center">
                         {msg.role === "user" ? (
                           <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                            {session?.user?.image ? (
-                              <Image
-                                src={session.user.image}
-                                alt="Profile"
-                                width={32}
-                                height={32}
-                                className="rounded-full"
-                              />
-                            ) : (
-                              <span className="text-white font-bold text-sm">
-                                {getCurrentUserName().charAt(0).toUpperCase()}
-                              </span>
-                            )}
+                            <span className="text-white font-bold text-sm">
+                              {getCurrentUserName().charAt(0).toUpperCase()}
+                            </span>
                           </div>
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
@@ -704,19 +681,9 @@ export default function Home() {
             <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center">
-                  {session?.user?.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt="Profile"
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <span className="text-white font-bold">
-                      {getCurrentUserName().charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  <span className="text-white font-bold">
+                    {getCurrentUserName().charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div>
                   <p className="text-white font-medium">{getCurrentUserName()}</p>
