@@ -5,6 +5,7 @@ import { useRouter } from "next/router"
 import { useSession, signIn, signOut } from "next-auth/react"
 import { Send, Plus, MessageSquare, User, Menu, X, LogOut, Settings, Trash2 } from "lucide-react"
 import Image from "next/image"
+import PWAInstall from '../components/PWAInstall'
 
 // Backend URL - Railway'den alındı
 const API_URL = "https://web-production-ceb2.up.railway.app"
@@ -749,6 +750,9 @@ export default function Home() {
           animation-delay: 1s;
         }
       `}</style>
+
+      {/* PWA Install Component */}
+      <PWAInstall />
     </div>
   )
 }
