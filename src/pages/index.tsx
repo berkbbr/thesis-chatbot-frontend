@@ -21,6 +21,7 @@ type Message = {
 declare global {
   interface Window {
     google: any;
+    googleAuthCallback: (response: any) => void;
   }
 }
 
@@ -43,6 +44,7 @@ export default function Home() {
   // Auth states
   const [user, setUser] = useState<any>(null)
   const [authToken, setAuthToken] = useState<string>("")
+  const [googleLoaded, setGoogleLoaded] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -58,10 +60,15 @@ export default function Home() {
     setIsChatMode(messages.length > 0)
   }, [messages])
 
-  // Google Login fonksiyonu
+  // Google Login fonksiyonu - Global scope'ta
   const handleGoogleLogin = async (credentialResponse: any) => {
     try {
       console.log("Google login response:", credentialResponse)
+      
+      if (!credentialResponse.credential) {
+        console.error("No credential in response")
+        return
+      }
       
       const response = await fetch(`${API_URL}/auth/google`, {
         method: 'POST',
@@ -88,12 +95,53 @@ export default function Home() {
         
         console.log("Login successful:", data.user)
       } else {
-        console.error("Login failed:", response.statusText)
+        const errorData = await response.text()
+        console.error("Login failed:", response.status, errorData)
         alert("Login failed. Please try again.")
       }
     } catch (error) {
       console.error("Login error:", error)
       alert("Login error. Please check your connection.")
+    }
+  }
+
+  // Global callback function for Google
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.googleAuthCallback = handleGoogleLogin
+    }
+  }, [])
+
+  // Google script yüklendiğinde
+  const onGoogleLoad = () => {
+    console.log("Google script loaded")
+    setGoogleLoaded(true)
+    
+    if (typeof window !== "undefined" && window.google) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: window.googleAuthCallback,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        })
+        
+        // Render button
+        const buttonDiv = document.getElementById("google-signin-button")
+        if (buttonDiv && !isSignedIn) {
+          window.google.accounts.id.renderButton(buttonDiv, {
+            theme: "outline",
+            size: "large",
+            text: "signin_with",
+            shape: "rectangular",
+            width: "100%"
+          })
+        }
+        
+        console.log("Google Sign-In initialized")
+      } catch (error) {
+        console.error("Google initialization error:", error)
+      }
     }
   }
 
@@ -104,35 +152,41 @@ export default function Home() {
       const savedUser = localStorage.getItem("user_data")
       
       if (savedToken && savedUser) {
-        setAuthToken(savedToken)
-        setUser(JSON.parse(savedUser))
-        setIsSignedIn(true)
-        setUserName(JSON.parse(savedUser).name)
+        try {
+          setAuthToken(savedToken)
+          setUser(JSON.parse(savedUser))
+          setIsSignedIn(true)
+          setUserName(JSON.parse(savedUser).name)
+        } catch (error) {
+          console.error("Error loading saved auth:", error)
+          localStorage.removeItem("auth_token")
+          localStorage.removeItem("user_data")
+        }
       }
     }
   }, [])
 
-  // Google button initialize et
+  // Re-render Google button when needed
   useEffect(() => {
-    if (typeof window !== "undefined" && window.google && !isSignedIn) {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleLogin
-      })
-      
-      // Butonu render et
-      const buttonDiv = document.getElementById("google-signin-button")
-      if (buttonDiv) {
-        window.google.accounts.id.renderButton(buttonDiv, { 
-          theme: "filled_blue", 
-          size: "large",
-          text: "signin_with",
-          shape: "rectangular",
-          width: "100%"
-        })
-      }
+    if (googleLoaded && !isSignedIn && typeof window !== "undefined" && window.google) {
+      setTimeout(() => {
+        const buttonDiv = document.getElementById("google-signin-button")
+        if (buttonDiv && buttonDiv.innerHTML === "") {
+          try {
+            window.google.accounts.id.renderButton(buttonDiv, {
+              theme: "outline",
+              size: "large", 
+              text: "signin_with",
+              shape: "rectangular",
+              width: "100%"
+            })
+          } catch (error) {
+            console.error("Error re-rendering Google button:", error)
+          }
+        }
+      }, 500)
     }
-  }, [isSignedIn])
+  }, [googleLoaded, isSignedIn])
 
   const getUserId = () => {
     return user ? user.email : "guest"
@@ -336,6 +390,11 @@ export default function Home() {
   }
 
   const handleSignOut = () => {
+    // Google sign out
+    if (typeof window !== "undefined" && window.google) {
+      window.google.accounts.id.disableAutoSelect()
+    }
+    
     setIsSignedIn(false)
     setUser(null)
     setAuthToken("")
@@ -362,6 +421,7 @@ export default function Home() {
         <Script 
           src="https://accounts.google.com/gsi/client" 
           strategy="beforeInteractive"
+          onLoad={onGoogleLoad}
         />
         
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
@@ -383,24 +443,30 @@ export default function Home() {
               <p className="text-gray-400 text-lg">Your intelligent AI assistant</p>
             </div>
 
-            {/* Login Form */}
+            {/* Login Options */}
             <div className="space-y-6">
-              {/* Google Sign In Button */}
+              {/* Google Sign In */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
                 <div className="text-center mb-4">
                   <p className="text-white text-lg font-medium">Sign in to continue</p>
-                  <p className="text-gray-400 text-sm mt-2">Login with your Google account</p>
+                  <p className="text-gray-400 text-sm mt-2">Sign in with your Google account</p>
                 </div>
                 
-                <div className="flex justify-center">
-                  <div id="google-signin-button" className="w-full"></div>
+                <div className="mb-4">
+                  <div id="google-signin-button" className="w-full flex justify-center"></div>
                 </div>
+                
+                {!googleLoaded && (
+                  <div className="text-center text-gray-400 text-sm">
+                    Loading Google Sign-In...
+                  </div>
+                )}
               </div>
 
-              {/* Name Input & Continue */}
+              {/* Manual Name Input */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl">
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">Or enter your name</label>
                   <input
                     type="text"
                     value={userName}
@@ -412,9 +478,10 @@ export default function Home() {
 
                 <button
                   onClick={() => setIsSignedIn(true)}
-                  className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+                  disabled={!userName.trim()}
+                  className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continue
+                  Continue with Name
                 </button>
               </div>
 
@@ -436,9 +503,10 @@ export default function Home() {
     )
   }
 
-  // Ana uygulama (değişen kısımlar sadece Sign Out butonu)
+  // Rest of the component remains the same...
   return (
     <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden">
+      {/* Sidebar and main content - keep existing code */}
       {/* Sidebar */}
       <div
         className={`${
@@ -567,7 +635,7 @@ export default function Home() {
         />
       )}
 
-      {/* Main Content - AYNI KALSIN */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
         <div className="lg:hidden bg-gray-800/80 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
@@ -629,7 +697,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Chat Mode - AYNI KALSIN */}
+        {/* Chat Mode - Keep existing code */}
         {isChatMode && (
           <>
             {/* Chat Messages */}
@@ -643,18 +711,7 @@ export default function Home() {
                       <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center">
                         {msg.role === "user" ? (
                           user && user.avatar_url ? (
-                            <div className="w-8 h-8 rounded-full overflow-hidden">
-                              <Image src={user.avatar_url} alt="User" width={32} height={32} className="object-cover" />
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">
-                                {userName ? userName.charAt(0).toUpperCase() : "U"}
-                              </span>
-                            </div>
-                          )
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center relative">
                             <div className="w-5 h-5 relative">
                               <Image
                                 src="/orionbot-logo.png"
@@ -815,4 +872,15 @@ export default function Home() {
       `}</style>
     </div>
   )
-}
+}w-8 h-8 rounded-full overflow-hidden">
+                              <Image src={user.avatar_url} alt="User" width={32} height={32} className="object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">
+                                {userName ? userName.charAt(0).toUpperCase() : "U"}
+                              </span>
+                            </div>
+                          )
+                        ) : (
+                          <div className="
