@@ -288,7 +288,7 @@ export default function Home() {
   // Loading durumu
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center pwa-container safe-area-top">
         <div className="text-center">
           <div className="w-24 h-24 relative mx-auto mb-4">
             <Image src="/orionbot-logo.png" alt="OrionBot Logo" fill className="object-contain animate-pulse" />
@@ -302,7 +302,7 @@ export default function Home() {
   // Login Screen
   if (!isAuthenticated()) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4 pwa-container safe-area-top">
         {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
@@ -363,7 +363,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden pwa-container safe-area-top">
       {/* Sidebar */}
       <div
         className={`${
