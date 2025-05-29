@@ -363,7 +363,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden" style={{paddingTop: 'env(safe-area-inset-top)'}}>
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex overflow-hidden">
       {/* Sidebar */}
       <div
         className={`${
@@ -490,7 +490,7 @@ export default function Home() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-gray-800/80 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="lg:hidden bg-gray-800/80 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between" style={{paddingTop: 'max(12px, env(safe-area-inset-top))'}}>
           <button className="text-gray-400 hover:text-white" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </button>
